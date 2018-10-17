@@ -17,3 +17,12 @@ Deep predictive coding network (PCN) v1 is a bi-directional and recurrent neural
 (b) Two-layer substructure of PCN. Feedback (blue), feedforward (green), and recurrent (black) connections convey the top-down prediction, the bottom-up prediction error, and the past information, respectively.
 
 (c) The dynamic process in the PCN iteratively updates and refines the representation of visual input over time. PCN outputs the probability over candidate categories for object recognition. 
+
+## Usage
+
+## Results on CIFAR
+
+## Updates
+10/17/2018:
+
+   (1) Initial version.
