@@ -22,6 +22,9 @@ Deep predictive coding network (PCN) v1 is a bi-directional and recurrent neural
 
 ## Results on CIFAR
 
+![Image of pcav1](https://github.com/libilab/PCN_v1/blob/master/figures/fig_3.png)
+Testing accuracies of PCNs with different time steps
+
 ## Updates
 10/17/2018:
 
