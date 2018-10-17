@@ -29,4 +29,4 @@ Testing accuracies of PCNs with different time steps.
 ## Updates
 10/17/2018:
 
-   (1) Initial version.
+   (1) readme file.
