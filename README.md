@@ -1,5 +1,5 @@
-# PCN_v1
-This repository contains the code for PCN v1 introduced in the following paper:
+# PCN with Global Recurrent Processing
+This repository contains the code for PCN with global recurrent processing introduced in the following paper:
 
 [Deep Predictive Coding Network for Object Recognition](https://arxiv.org/abs/1802.04762) (ICML2018)
 
