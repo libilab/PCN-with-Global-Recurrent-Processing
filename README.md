@@ -19,7 +19,7 @@ Deep predictive coding network (PCN) v1 is a bi-directional and recurrent neural
 (c) The dynamic process in the PCN iteratively updates and refines the representation of visual input over time. PCN outputs the probability over candidate categories for object recognition. 
 
 ## Usage
-Install Torch and required dependencies like cuDNN. See the instructions [here](https://github.com/facebook/fb.resnet.torch/blob/master/INSTALL.md) for a step-by-step guide.
+Install Torch and required dependencies like cuDNN. See the instructions [here](https://github.com/pytorch/pytorch) for a step-by-step guide.
 
 Clone this repo: https://github.com/libilab/PCN_v1.git
 
