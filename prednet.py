@@ -64,7 +64,7 @@ class Conv2d(nn.Module):
 # PredNet
 class PredNet(nn.Module):
 
-    def __init__(self, num_classes=10, cls=3, affine = True):
+    def __init__(self, num_classes=10, cls=3):
         super().__init__()
         ics = [3,  64, 64,  128, 128, 256, 256, 256] # input chanels
         ocs = [64, 64, 128, 128, 256, 256, 256, 256] # output chanels
@@ -82,22 +82,20 @@ class PredNet(nn.Module):
         self.a0 = nn.ParameterList([nn.Parameter(torch.zeros(1,ics[i],1,1)+0.5) for i in range(1,self.nlays)])
         self.b0 = nn.ParameterList([nn.Parameter(torch.zeros(1,ocs[i],1,1)+1.0) for i in range(self.nlays)])
 
+        #Group Normalization with group = 1
+        self.GN = nn.ModuleList([nn.GroupNorm(1,ocs[i]) for i in range(self.nlays)])
+
         # Linear layer
         self.linear = nn.Linear(ocs[-1], num_classes)
-
-        # Parameter in Layer Normalization
-        self.affine = affine
 
     def forward(self, x):
 
         # Feedforward
         xr = [F.relu(self.FFconv[0](x))]
-        LN = nn.LayerNorm(xr[-1].size()[1:],elementwise_affine=self.affine).cuda()         # Adding Layer Normalization
-        xr[-1] = LN(xr[-1])
+        xr[0] = self.GN[0](xr[0])
         for i in range(1,self.nlays):            
-            xr.append(F.relu(self.FFconv[i](xr[i-1])))
-            LN = nn.LayerNorm(xr[-1].size()[1:],elementwise_affine=self.affine).cuda()            
-            xr[-1] = LN(xr[-1])
+            xr.append(F.relu(self.FFconv[i](xr[i-1])))          
+            xr[i] = self.GN[i](xr[i])
 
         # Dynamic process 
         for t in range(self.cls):
@@ -108,19 +106,16 @@ class PredNet(nn.Module):
                 xp = [self.FBconv[i](xr[i])] + xp
                 a0 = F.relu(self.a0[i-1]).expand_as(xr[i-1])
                 xr[i-1] = F.relu(xp[0]*a0 + xr[i-1]*(1-a0))
-                LN = nn.LayerNorm(xr[i-1].size()[1:],elementwise_affine=self.affine).cuda()
-                xr[i-1] = LN(xr[i-1])
+                xr[i-1] = self.GN[i-1](xr[i-1])
 
             # Feedforward prediction error
             b0 = F.relu(self.b0[0]).expand_as(xr[0])
             xr[0] = F.relu(self.FFconv[0](x-self.FBconv[0](xr[0]))*b0 + xr[0])
-            LN = nn.LayerNorm(xr[0].size()[1:],elementwise_affine=self.affine).cuda()
-            xr[0] = LN(xr[0])
+            xr[0] = self.GN[0](xr[0])
             for i in range(1, self.nlays):
                 b0 = F.relu(self.b0[i]).expand_as(xr[i])
                 xr[i] = F.relu(self.FFconv[i](xr[i-1]-xp[i-1])*b0 + xr[i])
-                LN = nn.LayerNorm(xr[i].size()[1:],elementwise_affine=self.affine).cuda()
-                xr[i] = LN(xr[i])
+                xr[i] = self.GN[i](xr[i])
 
         # classifier                
         out = F.avg_pool2d(xr[-1], xr[-1].size(-1))
@@ -132,13 +127,16 @@ class PredNet(nn.Module):
 
 # PredNet
 class PredNetTied(nn.Module):
-    def __init__(self, num_classes=10, cls=3, affine = True):
+    def __init__(self, num_classes=10, cls=3):
         super().__init__()
         ics = [3,  64, 64,  128, 128, 256, 256, 256] # input chanels
         ocs = [64, 64, 128, 128, 256, 256, 256, 256] # output chanels
         sps = [False, False, True, False, True, False, False, False] # downsample flag
         self.cls = cls # num of circles
         self.nlays = len(ics) # num of circles
+
+        #Group Normalization with group = 1
+        self.GN = nn.ModuleList([nn.GroupNorm(1,ocs[i]) for i in range(self.nlays)])
 
         # Convolutional layers
         self.conv = nn.ModuleList([Conv2d(ics[i],ocs[i],sample=sps[i]) for i in range(self.nlays)])
@@ -150,19 +148,14 @@ class PredNetTied(nn.Module):
         # Linear layer
         self.linear = nn.Linear(ocs[-1], num_classes)
 
-         # Parameter in Layer Normalization
-        self.affine = affine
-
     def forward(self, x):
 
         # Feedforward
-        xr = [F.relu(self.conv[0](x))]       
-        LN = nn.LayerNorm(xr[-1].size()[1:],elementwise_affine=self.affine).cuda()   # Adding Layer Normalization         
-        xr[-1] = LN(xr[-1])
+        xr = [F.relu(self.conv[0](x))]        
+        xr[0] = self.GN[0](xr[0])
         for i in range(1,self.nlays):
-            xr.append(F.relu(self.conv[i](xr[i-1])))
-            LN = nn.LayerNorm(xr[-1].size()[1:],elementwise_affine=self.affine).cuda()   # Adding Layer Normalization         
-            xr[-1] = LN(xr[-1])
+            xr.append(F.relu(self.conv[i](xr[i-1])))     
+            xr[i] = self.GN[i](xr[i])
 
         # Dynamic process 
         for t in range(self.cls):
@@ -173,19 +166,16 @@ class PredNetTied(nn.Module):
                 xp = [self.conv[i](xr[i],feedforward=False)] + xp
                 a = F.relu(self.a0[i-1]).expand_as(xr[i-1])
                 xr[i-1] = F.relu(xp[0]*a + xr[i-1]*(1-a))
-                LN = nn.LayerNorm(xr[i-1].size()[1:],elementwise_affine=self.affine).cuda()     # Adding Layer Normalization   
-                xr[i-1] = LN(xr[i-1])
+                xr[i-1] = self.GN[i-1](xr[i-1])
 
             # Feedforward prediction error
             b = F.relu(self.b0[0]).expand_as(xr[0])
             xr[0] = F.relu(self.conv[0](x - self.conv[0](xr[0],feedforward=False))*b + xr[0])
-            LN = nn.LayerNorm(xr[0].size()[1:],elementwise_affine=self.affine).cuda()      # Adding Layer Normalization
-            xr[0] = LN(xr[0])   
+            xr[0] = self.GN[0](xr[0])   
             for i in range(1, self.nlays):
                 b = F.relu(self.b0[i]).expand_as(xr[i])
-                xr[i] = F.relu(self.conv[i](xr[i-1]-xp[i-1])*b + xr[i])
-                LN = nn.LayerNorm(xr[i].size()[1:],elementwise_affine=self.affine).cuda()    # Adding Layer Normalization   
-                xr[i] = LN(xr[i])
+                xr[i] = F.relu(self.conv[i](xr[i-1]-xp[i-1])*b + xr[i])  
+                xr[i] = self.GN[i](xr[i])
 
         # classifier                
         out = F.avg_pool2d(xr[-1], xr[-1].size(-1))

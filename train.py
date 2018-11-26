@@ -12,7 +12,7 @@ from prednet import *
 from utils import progress_bar
 from torch.autograd import Variable
 
-def train_prednet(model='PredNetTied', circles=6, gpunum=4):
+def train_prednet(model='PredNetTied', cls=6, gpunum=4):
     use_cuda = torch.cuda.is_available() # choose to use gpu if possible
     best_acc = 0  # best test accuracy
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
@@ -22,7 +22,7 @@ def train_prednet(model='PredNetTied', circles=6, gpunum=4):
     lr = 0.1 #learning rate
     
     models = {'PredNet': PredNet, 'PredNetTied':PredNetTied}
-    modelname = model+'_'+str(circles)+'CLS_'+str(rep)+'REP'
+    modelname = model+'_'+str(cls)+'CLS_'+str(rep)+'REP'
     
     # clearn folder
     checkpointpath = root+'checkpoint/'
@@ -34,7 +34,7 @@ def train_prednet(model='PredNetTied', circles=6, gpunum=4):
         os.mkdir(logpath)
     while(os.path.isfile(checkpointpath + modelname + '_last_ckpt.t7')): 
         rep += 1
-        modelname = model+'_'+str(circles)+'CLS_'+str(rep)+'REP'
+        modelname = model+'_'+str(cls)+'CLS_'+str(rep)+'REP'
         
     # Data
     print('==> Preparing data..')
@@ -56,16 +56,19 @@ def train_prednet(model='PredNetTied', circles=6, gpunum=4):
 
     # Model
     print('==> Building model..')
-    net = models[model](num_classes=100,cls=circles)
+    net = models[model](num_classes=100,cls=cls)
        
     #set up optimizer
     if model=='PredNetTied':
         convparas = [p for p in net.conv.parameters()]+\
-                    [p for p in net.linear.parameters()]
+                    [p for p in net.linear.parameters()]+\
+                    [p for p in net.GN.parameters()]
     else:
         convparas = [p for p in net.FFconv.parameters()]+\
                     [p for p in net.FBconv.parameters()]+\
-                    [p for p in net.linear.parameters()]
+                    [p for p in net.linear.parameters()]+\
+                    [p for p in net.GN.parameters()]
+
     rateparas = [p for p in net.a0.parameters()]+\
                 [p for p in net.b0.parameters()]
     optimizer = optim.SGD([
