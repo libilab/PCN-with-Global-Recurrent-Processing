@@ -12,17 +12,16 @@ from prednet import *
 from utils import progress_bar
 from torch.autograd import Variable
 
-def train_prednet(model='PredNetTied', cls=6, gpunum=4):
+def train_prednet(model='PredNetTied', cls=6, gpunum=4, lr=0.01):
     use_cuda = torch.cuda.is_available() # choose to use gpu if possible
     best_acc = 0  # best test accuracy
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
     batchsize = 128 #batch size
     root = './'
     rep = 1 #intial repitetion is 1
-    lr = 0.1 #learning rate
     
     models = {'PredNet': PredNet, 'PredNetTied':PredNetTied}
-    modelname = model+'_'+str(cls)+'CLS_'+str(rep)+'REP'
+    modelname = model+'_'+str(lr)+'LR_'+str(cls)+'CLS_'+str(rep)+'REP'
     
     # clearn folder
     checkpointpath = root+'checkpoint/'
@@ -34,7 +33,7 @@ def train_prednet(model='PredNetTied', cls=6, gpunum=4):
         os.mkdir(logpath)
     while(os.path.isfile(checkpointpath + modelname + '_last_ckpt.t7')): 
         rep += 1
-        modelname = model+'_'+str(cls)+'CLS_'+str(rep)+'REP'
+        modelname = model+'_'+str(lr)+'LR_'+str(cls)+'CLS_'+str(rep)+'REP'
         
     # Data
     print('==> Preparing data..')
@@ -61,13 +60,11 @@ def train_prednet(model='PredNetTied', cls=6, gpunum=4):
     #set up optimizer
     if model=='PredNetTied':
         convparas = [p for p in net.conv.parameters()]+\
-                    [p for p in net.linear.parameters()]+\
-                    [p for p in net.GN.parameters()]
+                    [p for p in net.linear.parameters()]
     else:
         convparas = [p for p in net.FFconv.parameters()]+\
                     [p for p in net.FBconv.parameters()]+\
-                    [p for p in net.linear.parameters()]+\
-                    [p for p in net.GN.parameters()]
+                    [p for p in net.linear.parameters()]
 
     rateparas = [p for p in net.a0.parameters()]+\
                 [p for p in net.b0.parameters()]
@@ -104,7 +101,7 @@ def train_prednet(model='PredNetTied', cls=6, gpunum=4):
             loss.backward()
             optimizer.step()
     
-            train_loss += loss.data[0]
+            train_loss += loss[0]
             _, predicted = torch.max(outputs.data, 1)
             total += targets.size(0)
             correct += predicted.eq(targets.data).cpu().sum()
@@ -131,7 +128,7 @@ def train_prednet(model='PredNetTied', cls=6, gpunum=4):
             outputs = net(inputs)
             loss = criterion(outputs, targets)
     
-            test_loss += loss.data[0]
+            test_loss += loss[0]
             _, predicted = torch.max(outputs.data, 1)
             total += targets.size(0)
             correct += predicted.eq(targets.data).cpu().sum()
