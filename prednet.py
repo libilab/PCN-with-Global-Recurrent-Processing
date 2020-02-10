@@ -75,7 +75,7 @@ class PredNet(nn.Module):
         # Feedforward layers
         self.FFconv = nn.ModuleList([FFconv2d(ics[i],ocs[i],downsample=sps[i]) for i in range(self.nlays)])
         # Feedback layers
-        if True: # cls > 0:
+        if cls > 0:
             self.FBconv = nn.ModuleList([FBconv2d(ocs[i],ics[i],upsample=sps[i]) for i in range(self.nlays)])
 
         # Update rate

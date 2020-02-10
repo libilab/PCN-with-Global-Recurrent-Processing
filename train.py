@@ -101,7 +101,7 @@ def train_prednet(model='PredNetTied', cls=6, gpunum=4, lr=0.01):
             loss.backward()
             optimizer.step()
     
-            train_loss += loss[0]
+            train_loss += loss.data[0]
             _, predicted = torch.max(outputs.data, 1)
             total += targets.size(0)
             correct += predicted.eq(targets.data).cpu().sum()
@@ -128,7 +128,7 @@ def train_prednet(model='PredNetTied', cls=6, gpunum=4, lr=0.01):
             outputs = net(inputs)
             loss = criterion(outputs, targets)
     
-            test_loss += loss[0]
+            test_loss += loss.data[0]
             _, predicted = torch.max(outputs.data, 1)
             total += targets.size(0)
             correct += predicted.eq(targets.data).cpu().sum()
