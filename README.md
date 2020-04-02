@@ -39,3 +39,7 @@ Testing accuracies of PCNs with different time steps.
 10/17/2018:
 
    (1) readme file.
+
+02/12/2020:
+
+   (1) removed group normalization to match the implementation in the paper.
